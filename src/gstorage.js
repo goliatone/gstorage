@@ -50,7 +50,7 @@
      */
     var GStorage = function(config){
         $.extend(this, options, config || {});
-        this.options = options;
+        this.options = config;
         this.init();
     };
 
@@ -75,6 +75,10 @@
     GStorage.prototype.use = function(ext){
         $.extend(GConfig.prototype, ext);
         return this;
+    };
+
+    GStorage.prototype.maxSize = function(){
+        return this.store.maxSize();
     };
 
     GStorage.prototype.size = function(){
@@ -104,6 +108,10 @@
         return this.store.has(key);
     };
 
+    GStorage.prototype.key = function(key){
+        return key;
+    };
+
     GStorage.prototype.purge = function(){
         this.store.purge();
         return this;
@@ -118,22 +126,32 @@
 
     };
 
+////////////////////////////////////////////////////
+// Driver: NullStore
+////////////////////////////////////////////////////
+
     var NullStore = function(){};
-    var methods = ['init', 'supported', 'size', 'get', 'set', 'del', 'has', 'purge', 'clear'];
+    var methods = ['init', 'supported', 'size', 'maxSize', 'get', 'set', 'del', 'has', 'purge', 'clear'];
     for(var p in methods) NullStore.prototype[methods[p]] = function(){};
     
     var LocalStore = function(config){};
 
+////////////////////////////////////////////////////
+// Driver: LocalStore
+////////////////////////////////////////////////////
+
     LocalStore.prototype.init = function(config){
         $.extend(this, config || {});
+        this.config = config;
+        this.store = window.localStorage;
     };
 
     LocalStore.prototype.supported = function(){
         var success = true;
         try {
             var value = Math.random();
-            storage.setItem(value, value);
-            storage.removeItem(value);
+            this.store.setItem(value, value);
+            this.store.removeItem(value);
         } catch (e) {
             success = false;
         }
@@ -141,28 +159,91 @@
         return success;
     };
 
+    LocalStore.prototype.maxSize = function(){
+        return -1;
+    };
+
     LocalStore.prototype.size = function(){
-        return localStorage.length;
+        return this.store.length;
     };
 
     LocalStore.prototype.get = function(key, def){
         // 'undefined' === typeof def && def=null;
-        return this.has(key) ? localStorage.getItem(key) : def;
+        return this.has(key) ? window.localStorage.getItem(key) : def;
     };
 
     LocalStore.prototype.set = function(key, value){
-        localStorage.setItem( key , value );
+        window.localStorage.setItem( key , value );
     };
 
     LocalStore.prototype.del = function(key){
-        localStorage.removeItem(key);
+        window.localStorage.removeItem(key);
     };
 
     LocalStore.prototype.has = function(key){
-        return localStorage.getItem(key) !== null;
+        return window.localStorage.getItem(key) !== null;
     };
 
     LocalStore.prototype.purge = function(){
+        for ( var i = window.localStorage.length - 1; i >= 0; i-- ) {
+            if (window.localStorage.key(i).indexOf(this.purgeKey) !== -1 ) {
+                window.localStorage.removeItem(window.localStorage.key(i));
+            }
+        }
+    };
+
+    LocalStore.prototype.clear = function(){
+        window.localStorage.clear();
+    };
+
+////////////////////////////////////////////////////
+// Driver: GlobalStore
+////////////////////////////////////////////////////
+    
+    GlobalStore.prototype.init = function(config){
+        $.extend(this, config || {});
+        ('domain' in config)  || (config.domain = window.location.hostname);
+        this.config = config;
+        this.store = window.globalStorage[this.config.domain];
+    };
+
+    GlobalStore.prototype.supported = function(){
+        var success = true;
+        try {
+            var store =  window.globalStorage[window.location.hostname];
+        } catch(){
+            success = false;
+        }
+        
+        return success;
+    };
+
+    GlobalStore.prototype.maxSize = function(){
+        return -1;
+    };
+
+    GlobalStore.prototype.size = function(){
+        return localStorage.length;
+    };
+
+    GlobalStore.prototype.get = function(key, def){
+        // 'undefined' === typeof def && def=null;
+        return this.has(key) ? localStorage.getItem(key) : def;
+    };
+
+    GlobalStore.prototype.set = function(key, value){
+        localStorage.setItem( key , value );
+    };
+
+    GlobalStore.prototype.del = function(key){
+        localStorage.removeItem(key);
+    };
+
+    GlobalStore.prototype.has = function(key){
+        return localStorage.getItem(key) !== null;
+    };
+
+    GlobalStore.prototype.purge = function(){
         for ( var i = localStorage.length - 1; i >= 0; i-- ) {
             if ( localStorage.key(i).indexOf(this.purgeKey) !== -1 ) {
                 localStorage.removeItem(localStorage.key(i));
@@ -170,10 +251,9 @@
         }
     };
 
-    LocalStore.prototype.clear = function(){
+    GlobalStore.prototype.clear = function(){
         localStorage.clear();
     };
-
 
     return GStorage;
 }));
