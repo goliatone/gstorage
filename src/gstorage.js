@@ -68,7 +68,7 @@
 ///////////////////////////////////////////////////
 
     GStorage.prototype.init = function(){
-        this.store = new LocalStorage();
+        this.store = new LocalStore();
         this.store.init(this.options);
     };
 
@@ -118,19 +118,17 @@
 
     };
 
-    var NullStorage = function(){};
+    var NullStore = function(){};
     var methods = ['init', 'supported', 'size', 'get', 'set', 'del', 'has', 'purge', 'clear'];
-    for(var p in methods) NullStorage.prototype[methods[p]] = function(){};
+    for(var p in methods) NullStore.prototype[methods[p]] = function(){};
     
-    var LocalStorage = function(config){
+    var LocalStore = function(config){};
+
+    LocalStore.prototype.init = function(config){
         $.extend(this, config || {});
     };
 
-    LocalStorage.prototype.init = function(config){
-        $.extend(this, config || {});
-    };
-
-    LocalStorage.prototype.supported = function(){
+    LocalStore.prototype.supported = function(){
         var success = true;
         try {
             var value = Math.random();
@@ -143,28 +141,28 @@
         return success;
     };
 
-    LocalStorage.prototype.size = function(){
+    LocalStore.prototype.size = function(){
         return localStorage.length;
     };
 
-    LocalStorage.prototype.get = function(key, def){
+    LocalStore.prototype.get = function(key, def){
         // 'undefined' === typeof def && def=null;
         return this.has(key) ? localStorage.getItem(key) : def;
     };
 
-    LocalStorage.prototype.set = function(key, value){
+    LocalStore.prototype.set = function(key, value){
         localStorage.setItem( key , value );
     };
 
-    LocalStorage.prototype.del = function(key){
+    LocalStore.prototype.del = function(key){
         localStorage.removeItem(key);
     };
 
-    LocalStorage.prototype.has = function(key){
+    LocalStore.prototype.has = function(key){
         return localStorage.getItem(key) !== null;
     };
 
-    LocalStorage.prototype.purge = function(){
+    LocalStore.prototype.purge = function(){
         for ( var i = localStorage.length - 1; i >= 0; i-- ) {
             if ( localStorage.key(i).indexOf(this.purgeKey) !== -1 ) {
                 localStorage.removeItem(localStorage.key(i));
@@ -172,7 +170,7 @@
         }
     };
 
-    LocalStorage.prototype.clear = function(){
+    LocalStore.prototype.clear = function(){
         localStorage.clear();
     };
 
