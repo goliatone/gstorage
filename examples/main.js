@@ -9,6 +9,10 @@ requirejs.config({
 
 define(['gstorage', 'jquery'], function (GStorage, $) {
     console.log('Loading');
-	var gstorage = new GStorage();
-	gstorage.init();
+	var gs = new GStorage();
+	gs.init();
+	console.log(gs.has('test'));
+	gs.set('test', 'something');
+	console.log(gs.has('test'));
+	window.gs = gs;
 });
