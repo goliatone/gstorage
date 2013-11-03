@@ -136,8 +136,16 @@
     
     var LocalStore = function(config){};
 
+
+////////////////////////////////////////////////////
+// DRIVERS
+// https://developer.mozilla.org/en-US/docs/Web/Guide/API/DOM/Storage?redirectlocale=en-US&redirectslug=Web%2FGuide%2FDOM%2FStorage
+////////////////////////////////////////////////////
+
+
 ////////////////////////////////////////////////////
 // Driver: LocalStore
+// Firefox 3.5
 ////////////////////////////////////////////////////
 
     LocalStore.prototype.init = function(config){
@@ -169,35 +177,36 @@
 
     LocalStore.prototype.get = function(key, def){
         // 'undefined' === typeof def && def=null;
-        return this.has(key) ? window.localStorage.getItem(key) : def;
+        return this.has(key) ? this.store.getItem(key) : def;
     };
 
     LocalStore.prototype.set = function(key, value){
-        window.localStorage.setItem( key , value );
+        this.store.setItem( key , value );
     };
 
     LocalStore.prototype.del = function(key){
-        window.localStorage.removeItem(key);
+        this.store.removeItem(key);
     };
 
     LocalStore.prototype.has = function(key){
-        return window.localStorage.getItem(key) !== null;
+        return this.store.getItem(key) !== null;
     };
 
     LocalStore.prototype.purge = function(){
-        for ( var i = window.localStorage.length - 1; i >= 0; i-- ) {
-            if (window.localStorage.key(i).indexOf(this.purgeKey) !== -1 ) {
-                window.localStorage.removeItem(window.localStorage.key(i));
+        for ( var i = this.store.length - 1; i >= 0; i-- ) {
+            if (this.store.key(i).indexOf(this.purgeKey) !== -1 ) {
+                this.store.removeItem(this.store.key(i));
             }
         }
     };
 
     LocalStore.prototype.clear = function(){
-        window.localStorage.clear();
+        this.store.clear();
     };
 
 ////////////////////////////////////////////////////
 // Driver: GlobalStore
+// Obsolete since Gecko 13.0 (Firefox 13.0 / Thunderbird 13.0 / SeaMonkey 2.10)
 ////////////////////////////////////////////////////
     
     GlobalStore.prototype.init = function(config){
