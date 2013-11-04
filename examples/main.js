@@ -2,17 +2,19 @@
 /* jshint strict: false */
 requirejs.config({
     paths: {
-        'jquery': '../lib/jquery/jquery',
-        'gstorage': '../src/gstorage'
+        'jquery': '../jquery/jquery',
+        'gstorage': '../gstorage'
     }
 });
 
 define(['gstorage', 'jquery'], function (GStorage, $) {
     console.log('Loading');
 	var gs = new GStorage();
-	gs.init();
-	console.log(gs.has('test'));
-	gs.set('test', 'something');
-	console.log(gs.has('test'));
+	// console.log(gs.has('test2'));
+	
+	gs.set('test2', 'something');
+	// console.log(gs.has('test2'));
+	// if(gs.has('test')) gs.get('test');
+	gs.get('test2');
 	window.gs = gs;
 });

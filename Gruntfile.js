@@ -13,7 +13,8 @@ module.exports = function (grunt) {
         name: 'gstorage',
         src: 'src',
         dist: 'dist',
-        example:'example'
+        lib: 'lib',
+        example:'examples'
     };
 
     try {
@@ -48,7 +49,9 @@ module.exports = function (grunt) {
                         return [
                             lrSnippet,
                             mountFolder(connect, '.tmp'),
-                            mountFolder(connect, yeomanConfig.src)
+                            mountFolder(connect, yeomanConfig.src),
+                            mountFolder(connect, yeomanConfig.lib),
+                            mountFolder(connect, yeomanConfig.example)
                         ];
                     }
                 }
