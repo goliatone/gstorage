@@ -41,6 +41,7 @@
 
 ///////////////////////////////////////////////////
 // CONSTRUCTOR
+// TODO: Add inmemory store, to use as cache.
 ///////////////////////////////////////////////////
 	
 	var options = {
@@ -158,7 +159,7 @@
             pos += 2;
         }
 
-        return (hash1 + (hash2 * 1566083941));
+        return (hash1 + (hash2 * 1566083941)).toString();
     };
 
     /**
@@ -229,7 +230,7 @@
                       .replace('#hashLength#', this.hashLength);
 
         var args = [];
-
+        console.log('init ', sql);
         this.store.transaction(function (t) { 
             t.executeSql(sql, args);
         }, this.onSuccess, this.onError);
@@ -271,9 +272,9 @@
             args = [id],
             onSuccess = function(x, results){
                 var has = (results.rows.length > 0);
-                console.log('we has: ', key, has, results.rows.item(0));
+                console.log('we has: ', key, has);
             };
-
+        console.log('get ', sql, args);
         this.store.transaction(function(t){
             t.executeSql(sql, args, onSuccess, self.onError );
         });
@@ -287,10 +288,10 @@
                     .replace('#storeID#', this.storeID);
 
         var id   = this.hash(key),
-            now  = this.now( )
+            now  = this.now( ),
             self = this,
             args = [id, key, value, now];
-
+        console.log('set ', sql, args);
         this.store.transaction(function(t){
             t.executeSql(sql, args, self.onSuccess, self.onError);
         });
@@ -305,7 +306,7 @@
         var id   = this.hash(key),
             args = [id],
             self = this;
-
+        console.log('del ', sql, args);
         this.store.transaction(function(t){
             t.executeSql(sql, args, self.onError, self.onSuccess);
         });
@@ -324,9 +325,9 @@
                 var has = (results.rows.length > 0);
                 console.log('we has: ', key, has);
             };
-
+        console.log('has ', sql, args);
         this.store.transaction(function(t){
-            t.executeSql(sql, args, onSuccess, self.onError );
+            t.executeSql(sql, args, onSuccess, self.onError);
         });
     };
 
