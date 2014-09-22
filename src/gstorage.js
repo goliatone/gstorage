@@ -1,25 +1,21 @@
 /*
- * gstorage.js
+ * gstorage
  * https://github.com/goliatone/gstorage
- *
- * It depends on map, make sure we either have a shim or
- * we remove dependency.
- *
- * 
- * Copyright (c) 2013 goliatone
+ * Created with gbase.
+ * Copyright (c) 2014 goliatone
  * Licensed under the MIT license.
  */
 /* jshint strict: false, plusplus: true */
 /*global define: false, require: false, module: false, exports: false */
-(function (root, name, deps, factory) {
+(function(root, name, deps, factory) {
     "use strict";
     // Node
-     if(typeof deps === 'function') { 
+    if (typeof deps === 'function') {
         factory = deps;
         deps = [];
     }
-        
-    if (typeof exports === 'object') {        
+
+    if (typeof exports === 'object') {
         module.exports = factory.apply(root, deps.map(require));
     } else if (typeof define === 'function' && 'amd' in define) {
         //require js, here we assume the file is named as the lower
@@ -27,114 +23,220 @@
         define(name.toLowerCase(), deps, factory);
     } else {
         // Browser
-        var d, i = 0, global = root, old = global[name], mod;
-        while((d = deps[i]) !== undefined) deps[i++] = root[d];
+        var d, i = 0,
+            global = root,
+            old = global[name],
+            mod;
+        while ((d = deps[i]) !== undefined) deps[i++] = root[d];
         global[name] = mod = factory.apply(global, deps);
         //Export no 'conflict module', aliases the module.
-        mod.noConflict = function(){
+        mod.noConflict = function() {
             global[name] = old;
             return mod;
         };
     }
+}(this, 'gstorage', ['extend'], function(extend) {
 
-}(this, "GStorage", ['jquery'], function($) {
+    /**
+     * Extend method.
+     * @param  {Object} target Source object
+     * @return {Object}        Resulting object from
+     *                         meging target to params.
+     */
+    var _extend = extend;
 
-///////////////////////////////////////////////////
-// CONSTRUCTOR
-// TODO: Add inmemory store, to use as cache.
-///////////////////////////////////////////////////
-	
-	var options = {
-        //StoreKey should build storeID = storeKey + domain.
-        //that way we can use the library in the same browser
-        //in different websites without overriding stuff.
-        storeKey : '_gst_'
+    /**
+     * Shim console, make sure that if no console
+     * available calls do not generate errors.
+     * @return {Object} Console shim.
+     */
+    var _shimConsole = function(con) {
+
+        if (con) return con;
+
+        con = {};
+        var empty = {},
+            noop = function() {},
+            properties = 'memory'.split(','),
+            methods = ('assert,clear,count,debug,dir,dirxml,error,exception,group,' +
+                'groupCollapsed,groupEnd,info,log,markTimeline,profile,profileEnd,' +
+                'table,time,timeEnd,timeStamp,trace,warn').split(','),
+            prop,
+            method;
+
+        while (method = methods.pop()) con[method] = noop;
+        while (prop = properties.pop()) con[prop] = empty;
+
+        return con;
     };
-    
+
+
+
+    ///////////////////////////////////////////////////
+    // CONSTRUCTOR
+    ///////////////////////////////////////////////////
+
+    var options = {
+        hashLength: 32,
+        storeKey: '_GST_',
+        storeID: '_gstore_default_',
+        autoinitialize: true,
+        buildDefaultStore: function() {
+            //Use NullStore
+            return new WebSQLStore();
+        },
+        makeStoreId: function() {
+            return this.storeKey + window.location.hostname;
+        }
+
+        //store config
+        // storeName: '',
+        // storeTable: '',
+        // storeVersion: ''
+
+    };
+
     /**
      * GStorage constructor
-     * 
+     *
      * @param  {object} config Configuration object.
      */
-    var GStorage = function(config){
-        this.options = config || {};
-        $.extend(this, options, this.options);        
-        this.init();
+    var GStorage = function(config) {
+        config = config || {};
+
+        config = _extend({}, this.constructor.DEFAULTS, config);
+
+        if (config.autoinitialize) this.init(config);
     };
 
-    var o = $({}), _l = {};
-    var _a = function(e){ (e in _l) || (_l[e] = 0); _l[e] += 1; };
-    var _d = function(e){ (e in _l) && (_l[e] -= 1); };
- 
-    GStorage.prototype.on    = function ( ) { o.on.apply(o,  arguments); _a(arguments[0]); return this;};
-    GStorage.prototype.off   = function ( ) { o.off.apply(o, arguments); _d(arguments[0]); return this;};
-    GStorage.prototype.emit  = function ( ) { o.trigger.apply(o, arguments); return this;};
-    GStorage.prototype.once  = function ( ) { o.one.apply(o, arguments); return this;}
-    GStorage.prototype.emits = function (e) { return (e in _l && _l[e] > 0);};
+    GStorage.name = GStorage.prototype.name = 'GStorage';
 
-///////////////////////////////////////////////////
-// PUBLIC METHODS
-///////////////////////////////////////////////////
+    GStorage.VERSION = '0.0.0';
 
-    GStorage.prototype.init = function(){
-        //We want each domain to have it's own store        
-        this.storeID    = this.storeKey + window.location.hostname;
-        // this.hashLength = this.hash('sample').toString().length;
-        this.hashLength = 32;
+    /**
+     * Make default options available so we
+     * can override.
+     */
+    GStorage.DEFAULTS = options;
 
-        //TODO: Figure out a better way to send config.
-        this.options.now = this.now;
-        this.options.hash = this.hash;
-        this.options.storeID = this.storeID;
-        this.options.hashLength = this.hashLength;
-
-        this.store = new WebSQLStore();        
-        this.store.init(this.options);
+    GStorage.use = function(ext) {
+        _extend(GStorage.prototype, ext);
     };
 
-    GStorage.prototype.use = function(ext){
-        $.extend(GConfig.prototype, ext);        
+    ///////////////////////////////////////////////////
+    // PRIVATE METHODS
+    ///////////////////////////////////////////////////
+
+    GStorage.prototype.init = function(config) {
+        if (this.initialized) return this.logger.warn('Already initialized');
+        this.initialized = true;
+
+        console.log('GStorage: Init!');
+        _extend(this, config);
+
+        //TODO: Use promises!!!!!!
+        this.store = this.buildDefaultStore();
+        this.store.onError = this.onError.bind(this);
+        this.store.onSuccess = this.onSuccess.bind(this);
+        this.store.onConnected = this.onConnected.bind(this);
+
         return this;
     };
 
-    GStorage.prototype.maxSize = function(){
-        return this.store.maxSize();
+    GStorage.prototype.onError = function(e) {
+        this.logger.error(e);
     };
 
-    GStorage.prototype.size = function(){
-        return this.store.size();
+    GStorage.prototype.onConnected = function(e) {
+        this.logger.info('On connected', e, this);
+        this.emit('connected');
     };
 
-    GStorage.prototype.get = function(key, def){
+    GStorage.prototype.onSuccess = function(e) {
+        this.logger.info('On success', e, this);
+        this.emit('success');
+    };
+
+    ////////////////////////////////////////////
+    /// DATA ACCESSSOR MEHTODS
+    ///
+    ////////////////////////////////////////////
+    GStorage.prototype.get = function(key, def) {
         return this.store.get(key, def);
     };
 
-    GStorage.prototype.set = function(key, value){
+    GStorage.prototype.set = function(key, value) {
         var old = this.store.get(key, null);
+
         this.store.set(key, value);
-        //TODO: if(this.willtrigger('change'))
-        this.emit('change', key, old, value);
+
+        //TODO: We should formalize bindable model
+        //change event payload
+        this.emit('change', {
+            key: key,
+            old: old,
+            value: value
+        });
         return this;
     };
 
-    GStorage.prototype.del = function(key){
+    GStorage.prototype.del = function(key) {
         var old = this.store.get(key, null);
+
         this.store.del(key);
-        this.emit('change', key, old);
+
+        this.emit('change', {
+            key: key,
+            old: old,
+            value: null
+        });
+
         return this;
     };
 
-    GStorage.prototype.has = function(key){
+    //TODO: This might now make sense
+    GStorage.prototype.has = function(key) {
         return this.store.has(key);
     };
 
-    GStorage.prototype.key = function(key){
+    GStorage.prototype.key = function(key) {
         //TODO: Do we want to transform key?
         return key;
     };
 
-    GStorage.prototype.now = function(){        
-        //Unix timestamp        
+    ////////////////////////////////////////////
+    /// STORE DELEGATE METHODS
+    ///
+    ////////////////////////////////////////////
+    GStorage.prototype.maxSize = function() {
+        return this.store.maxSize();
+    };
+
+    GStorage.prototype.size = function() {
+        return this.store.size();
+    };
+
+    GStorage.prototype.clear = function() {
+        return this.store.clear();
+        return this;
+    };
+
+    GStorage.prototype.purge = function() {
+        var args = Array.prototype.slice.call(arguments);
+        this.store.purge(args);
+        return this;
+    };
+
+    GStorage.prototype.setTTL = function(key, time) {
+        throw new Error('TODO: This needs to be implemented!!!');
+    };
+
+    ////////////////////////////////////////////
+    /// UTILITY METHODS
+    ///
+    ////////////////////////////////////////////
+    GStorage.prototype.now = function() {
+        //Unix timestamp
         return new Date().getTime() / 1000 | 0;
     };
 
@@ -143,18 +245,18 @@
      * @param  {int} t  Unit timestamp.
      * @return {Date}   Date
      */
-    GStorage.prototype.dateFromTimestamp = function(t){
+    GStorage.prototype.dateFromTimestamp = function(t) {
         //From unit timestamp to date.
         return new Date(parseInt(t) * 1000);
     };
 
-    GStorage.prototype.hash = function(key){
-        var hash2 = 
-            hash1 = (5381<<16) + 5381,
-            pos   = 0;    
-        while(pos < key.length) {
+    GStorage.prototype.hash = function(key) {
+        var hash2 =
+            hash1 = (5381 << 16) + 5381,
+            pos = 0;
+        while (pos < key.length) {
             hash1 = ((hash1 << 5) + hash1 + (hash1 >> 27)) ^ key.charCodeAt(pos);
-            if( pos == key.length - 1) break;
+            if (pos == key.length - 1) break;
             hash2 = ((hash2 << 5) + hash2 + (hash2 >> 27)) ^ key.charCodeAt(pos + 1);
             pos += 2;
         }
@@ -163,332 +265,18 @@
     };
 
     /**
-     * Remove selected keys. It takes a variable
-     * number of keys.
-     *     
-     * @return {GStorage} Chainable method
+     * Logger method, meant to be implemented by
+     * mixin. As a placeholder, we use console if available
+     * or a shim if not present.
      */
-    GStorage.prototype.purge = function(){
-        var args = Array.prototype.slice.call(arguments);
-        this.store.purge(args);
-        return this;
-    };
+    GStorage.prototype.logger = _shimConsole(console);
 
     /**
-     * Clears the store.
-     * @return {GStorage} Chainable method
+     * PubSub emit method stub.
      */
-    GStorage.prototype.clear = function(){
-        this.store.clear();
-        return this;
+    GStorage.prototype.emit = function() {
+        this.logger.warn(GStorage, 'emit method is not implemented', arguments);
     };
 
-    GStorage.prototype.setTTL = function(key, time){
-
-    };
-
-////////////////////////////////////////////////////
-// Driver: NullStore
-////////////////////////////////////////////////////
-
-    var NullStore = function(){};
-    var methods = ['init', 'supported', 'size', 'maxSize', 'get', 'set', 'del', 'has', 'purge', 'clear'];
-    for(var p in methods) NullStore.prototype[methods[p]] = function(){return false;};   
-    NullStore.prototype.supported = function(){return true;}
-    NullStore.prototype.get = function(key, def){return def;}
-    NullStore.prototype.has = function(key){return false;}
-
-////////////////////////////////////////////////////
-// DRIVERS
-// http://dev.w3.org/html5/webstorage/#the-sessionstorage-attribute
-// https://developer.mozilla.org/en-US/docs/Web/Guide/API/DOM/Storage?redirectlocale=en-US&redirectslug=Web%2FGuide%2FDOM%2FStorage
-////////////////////////////////////////////////////
-
-////////////////////////////////////////////////////
-// Driver: sqlLite
-// Firefox 3.5
-////////////////////////////////////////////////////
-    
-    var WebSQLStore = function(config){};
-    WebSQLStore.prototype.init = function(config){
-        //TODO: We should ensure that we get the config
-        //      options that we need!
-        $.extend(this, config || {});
-        this.config = config;       
-        
-        //name -> version -> description -> size
-        //           openDatabaseSync
-        this.store = openDatabase(this.name, '1.0.0', this.name, 65536);
-        
-        var sql = ['CREATE TABLE IF NOT EXISTS #storeID#',
-                      ' (id NVARCHAR(#hashLength#) UNIQUE PRIMARY KEY,',
-                      ' key TEXT,',
-                      ' value TEXT,',
-                      ' timestamp REAL)'
-                     ].join('\n')
-                      .replace('#storeID#', this.storeID)
-                      .replace('#hashLength#', this.hashLength);
-
-        var args = [];
-        console.log('init ', sql);
-        this.store.transaction(function (t) { 
-            t.executeSql(sql, args);
-        }, this.onSuccess, this.onError);
-    };
-
-    WebSQLStore.prototype.onError = function(){
-        console.log('ON ERROR: ', arguments);
-    };
-
-    WebSQLStore.prototype.onSuccess = function(xxx, results){
-        console.log('ON SUCCESS: ', results);
-        var out = [];
-        for(var i =0, l = results.rows.length; i < l; i++){
-            out.push(results.rows.item(i));
-        }
-        console.log(out);
-    };
-
-    WebSQLStore.prototype.supported = function(){
-        return ('openDatabase' in window);
-    };
-
-    WebSQLStore.prototype.maxSize = function(){
-        return -1;
-    };
-
-    WebSQLStore.prototype.size = function(){
-        return -1;
-    };
-
-    WebSQLStore.prototype.get = function(key, def){
-        var sql = ['SELECT * FROM #storeID#',
-                   ' WHERE id = ?'
-                  ].join('\n')
-                  .replace('#storeID#', this.storeID);
-
-        var id   = this.hash(key),
-            self = this,
-            args = [id];
-        console.log('get ', sql, args);
-        this.store.transaction(function(t){
-            t.executeSql(sql, args, self.onSuccess, self.onError );
-        });
-    };
-
-    WebSQLStore.prototype.set = function(key, value){
-        var sql = ['INSERT OR REPLACE INTO #storeID#',
-                   ' (id, key, value, timestamp)',
-                   ' VALUES (?,?,?,?)'
-                   ].join('\n')
-                    .replace('#storeID#', this.storeID);
-
-        var id   = this.hash(key),
-            now  = this.now( ),
-            self = this,
-            args = [id, key, value, now];
-        console.log('set ', sql, args);
-        this.store.transaction(function(t){
-            t.executeSql(sql, args, self.onSuccess, self.onError);
-        });
-    };
-
-    WebSQLStore.prototype.del = function(key){
-         var sql = ['DELETE * FROM #storeID#',
-                   ' WHERE id = ?'
-                  ].join('\n')
-                  .replace('#storeID#', this.storeID);
-
-        var id   = this.hash(key),
-            args = [id],
-            self = this;
-        console.log('del ', sql, args);
-        this.store.transaction(function(t){
-            t.executeSql(sql, args, self.onError, self.onSuccess);
-        });
-    };
-
-    WebSQLStore.prototype.has = function(key){
-        var sql = ['SELECT * FROM #storeID#',
-                   ' WHERE id = ?'
-                  ].join('\n')
-                  .replace('#storeID#', this.storeID);
-
-        var id   = this.hash(key),
-            self = this,
-            args = [id],
-            onSuccess = function(x, results){
-                var has = (results.rows.length > 0);
-                console.log('we has: ', key, has);
-            };
-        console.log('has ', sql, args);
-        this.store.transaction(function(t){
-            t.executeSql(sql, args, onSuccess, self.onError);
-        });
-    };
-
-    WebSQLStore.prototype.purge = function(keys){
-        
-        var args = [],
-            self = this;
-
-        var idList = function(keys, args){
-            if(typeof keys === 'string'){
-                args.push(self.hash(keys));
-                return '= ?';
-            }
-            args = keys.map(self.hash);
-            return 'IN ('+Array(keys.length).join('?,') + '?)';
-        };
-
-        var sql = ['SELECT * FROM #storeID#',
-                   ' WHERE id #idList#'
-                  ].join('\n')
-                  .replace('#idList#', idList(keys, args))
-                  .replace('#storeID#', this.storeID);
-        
-
-        this.store.transaction(function(t){
-            t.executeSql(sql, args, onSuccess, self.onError );
-        });
-    };
-
-    WebSQLStore.prototype.clear = function(){
-        var sql = ['SELECT * FROM #storeID#'
-                  ].join('\n')
-                  .replace('#storeID#', this.storeID);
-        var args = [];
-
-        this.store.transaction(function(t){
-            t.executeSql(sql, args, onSuccess, self.onError );
-        });
-    };
-
-////////////////////////////////////////////////////
-// Driver: LocalStore
-// Firefox 3.5
-////////////////////////////////////////////////////
-//{ LocalStore    
-    var LocalStore = function(config){};
-
-    LocalStore.prototype.init = function(config){
-        $.extend(this, config || {});
-        this.config = config;
-        this.store = window.localStorage;
-    };
-
-    LocalStore.prototype.supported = function(){
-        var success = true;
-        try {
-            var value = Math.random();
-            this.store.setItem(value, value);
-            this.store.removeItem(value);
-        } catch (e) {
-            success = false;
-        }
-        
-        return success;
-    };
-
-    LocalStore.prototype.maxSize = function(){
-        return -1;
-    };
-
-    LocalStore.prototype.size = function(){
-        return this.store.length;
-    };
-
-    LocalStore.prototype.get = function(key, def){
-        // 'undefined' === typeof def && def=null;
-        return this.has(key) ? this.store.getItem(key) : def;
-    };
-
-    LocalStore.prototype.set = function(key, value){
-        this.store.setItem( key , value );
-    };
-
-    LocalStore.prototype.del = function(key){
-        this.store.removeItem(key);
-    };
-
-    LocalStore.prototype.has = function(key){
-        return this.store.getItem(key) !== null;
-    };
-
-    LocalStore.prototype.purge = function(){
-        for ( var i = this.store.length - 1; i >= 0; i-- ) {
-            if (this.store.key(i).indexOf(this.storeKey) !== -1 ) {
-                this.store.removeItem(this.store.key(i));
-            }
-        }
-    };
-
-    LocalStore.prototype.clear = function(){
-        this.store.clear();
-    };
-//}
-
-////////////////////////////////////////////////////
-// Driver: GlobalStore
-// Obsolete since Gecko 13.0 (Firefox 13.0 / Thunderbird 13.0 / SeaMonkey 2.10)
-////////////////////////////////////////////////////
-//{  GlobalStore
-    var GlobalStore = function(config){};
-
-    GlobalStore.prototype.init = function(config){
-        $.extend(this, config || {});
-        ('domain' in config)  || (config.domain = window.location.hostname);
-        this.config = config;
-        this.store = window.globalStorage[this.config.domain];
-    };
-
-    GlobalStore.prototype.supported = function(){
-        var success = true;
-        try {
-            window.globalStorage[window.location.hostname];
-        } catch(e) {
-            success = false;
-        }
-        
-        return success;
-    };
-
-    GlobalStore.prototype.maxSize = function(){
-        return -1;
-    };
-
-    GlobalStore.prototype.size = function(){
-        return this.store.length;
-    };
-
-    GlobalStore.prototype.get = function(key, def){
-        // 'undefined' === typeof def && def=null;
-        return this.has(key) ? this.store.getItem(key) : def;
-    };
-
-    GlobalStore.prototype.set = function(key, value){
-        this.store.setItem( key , value );
-    };
-
-    GlobalStore.prototype.del = function(key){
-        this.store.removeItem(key);
-    };
-
-    GlobalStore.prototype.has = function(key){
-        return this.store.getItem(key) !== null;
-    };
-
-    GlobalStore.prototype.purge = function(){
-        for ( var i = this.store.length - 1; i >= 0; i-- ) {
-            if ( this.store.key(i).indexOf(this.storeKey) !== -1 ) {
-                this.store.removeItem(this.store.key(i));
-            }
-        }
-    };
-
-    GlobalStore.prototype.clear = function(){
-        this.store.clear();
-    };
-//}
     return GStorage;
 }));
