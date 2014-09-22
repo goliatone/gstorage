@@ -1,14 +1,34 @@
 {
-  "name": "gstorage.js",
-  "version": "0.1.0",
-  "main": "./dist/gstorage.min.js",
-  "ignore": [
-    "**/.*"
-  ],
-  "dependencies": {
-    "jquery": "~1.9.1",
-    "requirejs": "~2.1.4",
-    "requirejs-text":"2.0.6",
-    "requirejs-domready":"2.0.1"
-  }
+    "name": "gstorage",
+    "version": "0.0.0",
+    "main": "./dist/gstorage.min.js",
+    "ignore": [
+        "**/.*"
+    ],
+    "dependencies": {
+        "jquery": "~2.0.3",
+        "gpub": "latest",
+        "gextend": "latest",
+        "gkeypath": "latest",
+        "requirejs": "~2.1.4",
+        "requirejs-text": "2.0.6",
+        "requirejs-domready": "2.0.1"
+    },
+    "exportsOverride": {
+        "jquery": {
+            "js": "jquery.js"
+        },
+        "requirejs": {
+            "js": "require.js"
+        },
+        "gextend": {
+            "js": "src/extend.js"
+        },
+        "gpub": {
+            "js": "src/gpub.js"
+        },
+        "gkeypath": {
+            "js": "src/keypath.js"
+        }
+    }
 }
