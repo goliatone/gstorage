@@ -9,7 +9,6 @@ define(['gstorage', 'jquery'], function(GStorage, $) {
             expect(GStorage).toBeTruthy();
             var gstorage = new GStorage();
             expect(gstorage).toBeTruthy();
-            // throw new Error('fuck');
         });
 
         it('GStorage should initialize', function() {
@@ -20,4 +19,5 @@ define(['gstorage', 'jquery'], function(GStorage, $) {
         });
         
     });
+
 });
