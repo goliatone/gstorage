@@ -2,7 +2,7 @@
 
 [![Build Status](https://secure.travis-ci.org/goliatone/gstorage.png)](http://travis-ci.org/goliatone/gstorage)
 
-Simple local storage interface
+Persistence layer
 
 ## Getting Started
 Download the [production version][min] or the [development version][max].
@@ -11,7 +11,16 @@ Download the [production version][min] or the [development version][max].
 [max]: https://raw.github.com/goliatone/gstorage/master/dist/gstorage.js
 
 ## Development
-`sudo npm install && bower install`
+`npm install && bower install`
+
+If you need to `sudo` the `npm` command, you can try to:
+
+```terminal
+sudo chown $(whoami) ~/.npm
+sudo chown $(whoami) /usr/local/share/npm/bin
+sudo chown -R $(whoami) /usr/local/lib/node_modules
+```
+
 
 If you bump versions, remember to update:
 - package.json
