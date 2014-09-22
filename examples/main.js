@@ -41,16 +41,20 @@ define('main', function(require) {
 
     window.gstorage = gstorage;
 
-
-    // var user = gstorage.get('user', false);
-    // if (!user) {
     gstorage.on('connected', function() {
         console.log('peperone')
-        this.get('user').on('success', function(e) {
-            console.log('==> Success', e);
+        this.get('user3').on('success', function(e) {
+            if (e) {
+                console.log('==> Transaction complete', e);
+            } else {
+                this.set('user3', {
+                    active: false,
+                    age: 23,
+                    email: 'asko@som.es',
+                    name: 'askone'
+                });
+            }
+
         });
     });
-
-    // } else console.log(user)
-    // window.user = user;
 });
