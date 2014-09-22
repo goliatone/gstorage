@@ -1,38 +1,38 @@
 'use strict';
 var lrSnippet = require('grunt-contrib-livereload/lib/utils').livereloadSnippet;
-var mountFolder = function (connect, dir) {
+var mountFolder = function(connect, dir) {
     return connect.static(require('path').resolve(dir));
 };
 
-module.exports = function (grunt) {
+module.exports = function(grunt) {
     // load all grunt tasks
     require('matchdep').filterDev('grunt-*').forEach(grunt.loadNpmTasks);
 
     // configurable paths
-    var yeomanConfig = {
-        name: 'gstorage',
+    var config = {
+        name: 'gl10n',
         src: 'src',
-        dist: 'dist',
         lib: 'lib',
-        example:'examples'
+        dist: 'dist',
+        example: 'examples'
     };
 
     try {
-        yeomanConfig.src = require('./component.json').appPath || yeomanConfig.src;
+        config.src = require('./component.json').appPath || config.src;
     } catch (e) {}
 
     grunt.initConfig({
-        yeoman: yeomanConfig,
-        livereload:{
+        config: config,
+        livereload: {
             port: 35723
         },
         watch: {
             livereload: {
                 files: [
-                    '<%= yeoman.src %>/{,*/}*.html',
-                    '{.tmp,<%= yeoman.src %>}/styles/{,*/}*.css',
-                    '{.tmp,<%= yeoman.src %>}/scripts/{,*/}*.js',
-                    '<%= yeoman.src %>/images/{,*/}*.{png,jpg,jpeg,gif,webp,svg}'
+                    '<%= config.example %>/{,*/}*.html',
+                    '{.tmp,<%= config.example %>}/{,*/}*.css',
+                    '<%= config.example %>/{,*/}*.js',
+                    '{.tmp,<%= config.src %>}/{,*/}*.js'
                 ],
                 tasks: ['livereload']
             }
@@ -45,20 +45,20 @@ module.exports = function (grunt) {
             },
             livereload: {
                 options: {
-                    middleware: function (connect) {
+                    middleware: function(connect) {
                         return [
                             lrSnippet,
                             mountFolder(connect, '.tmp'),
-                            mountFolder(connect, yeomanConfig.src),
-                            mountFolder(connect, yeomanConfig.lib),
-                            mountFolder(connect, yeomanConfig.example)
+                            mountFolder(connect, config.lib),
+                            mountFolder(connect, config.src),
+                            mountFolder(connect, config.example)
                         ];
                     }
                 }
             },
             test: {
                 options: {
-                    middleware: function (connect) {
+                    middleware: function(connect) {
                         return [
                             mountFolder(connect, '.tmp'),
                             mountFolder(connect, 'test')
@@ -66,7 +66,7 @@ module.exports = function (grunt) {
                     }
                 }
             },
-            dev:{
+            dev: {
                 options: {}
             }
         },
@@ -81,8 +81,8 @@ module.exports = function (grunt) {
                     dot: true,
                     src: [
                         '.tmp',
-                        '<%= yeoman.dist %>/*',
-                        '!<%= yeoman.dist %>/.git*'
+                        '<%= config.dist %>/*',
+                        '!<%= config.dist %>/.git*'
                     ]
                 }]
             },
@@ -94,21 +94,20 @@ module.exports = function (grunt) {
             },
             all: [
                 'Gruntfile.js',
-                '<%= yeoman.src %>/{,*/}*.js'
+                '<%= config.src %>/{,*/}*.js'
             ]
         },
         karma: {
             options: {
                 configFile: 'karma.conf.js',
-                runnerPort: 9999,
-                browsers: ['Chrome', 'Firefox']
+                runnerPort: 9999
             },
             unit: {
                 reporters: 'dots'
             },
-            continuous: {
-                singleRun: true,
-                browsers: ['PhantomJS']
+            debug: {
+                singleRun: false,
+                browsers: ['Chrome']
             },
             ci: {
                 singleRun: true,
@@ -118,9 +117,9 @@ module.exports = function (grunt) {
         concat: {
             dist: {
                 files: {
-                    '<%= yeoman.dist %>/<%= yeoman.name %>.js': [
+                    '<%= config.dist %>/<%= config.name %>.js': [
                         '.tmp/{,*/}*.js',
-                        '<%= yeoman.src %>/{,*/}*.js'
+                        '<%= config.src %>/{,*/}*.js'
                     ]
                 }
             }
@@ -128,8 +127,8 @@ module.exports = function (grunt) {
         uglify: {
             dist: {
                 files: {
-                    '<%= yeoman.dist %>/<%= yeoman.name %>.min.js': [
-                        '<%= yeoman.dist %>/<%= yeoman.name %>.js'
+                    '<%= config.dist %>/<%= config.name %>.min.js': [
+                        '<%= config.dist %>/<%= config.name %>.js'
                     ]
                 }
             }
@@ -139,10 +138,33 @@ module.exports = function (grunt) {
                 files: [{
                     expand: true,
                     dot: true,
-                    cwd: '<%= yeoman.src %>',
-                    dest: '<%= yeoman.dist %>',
+                    cwd: '<%= config.src %>',
+                    dest: '<%= config.dist %>',
                     src: []
                 }]
+            }
+        },
+        bower: {
+            install: {
+                options: {
+                    targetDir: './<%= config.lib %>',
+                    install: true,
+                    verbose: true,
+                    cleanTargetDir: false,
+                    cleanBowerDir: false,
+                    bowerOptions: {},
+                    layout: function(type, component) {
+                        console.warn(type, component);
+                        //grunt-bower-install wants to do component/type/file but
+                        //we need component/file
+                        var path = require('path');
+                        var renamedType = type;
+                        console.warn(path);
+                        console.warn(type);
+                        if (type === 'js') renamedType = '';
+                        return path.join(component, renamedType);
+                    }
+                }
             }
         },
         //https://github.com/vojtajina/grunt-bump
@@ -157,7 +179,7 @@ module.exports = function (grunt) {
                 tagName: 'v%VERSION%',
                 tagMessage: 'Version %VERSION%',
                 push: true,
-                pushTo: 'upstream',
+                pushTo: 'origin',
                 gitDescribeOptions: '--tags --always --abbrev=1 --dirty=-d' // options to use with '$ git describe'
             }
         }
