@@ -269,14 +269,10 @@
 
         var id   = this.hash(key),
             self = this,
-            args = [id],
-            onSuccess = function(x, results){
-                var has = (results.rows.length > 0);
-                console.log('we has: ', key, has);
-            };
+            args = [id];
         console.log('get ', sql, args);
         this.store.transaction(function(t){
-            t.executeSql(sql, args, onSuccess, self.onError );
+            t.executeSql(sql, args, self.onSuccess, self.onError );
         });
     };
 
