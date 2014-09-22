@@ -154,7 +154,7 @@
 
     GStorage.prototype.onSuccess = function(e) {
         this.logger.info('On success', e, this);
-        this.emit('success');
+        this.emit('success', e);
     };
 
     ////////////////////////////////////////////
@@ -162,7 +162,8 @@
     ///
     ////////////////////////////////////////////
     GStorage.prototype.get = function(key, def) {
-        return this.store.get(key, def);
+        this.store.get(key, def);
+        return this;
     };
 
     GStorage.prototype.set = function(key, value) {
@@ -174,23 +175,20 @@
         //change event payload
         this.emit('change', {
             key: key,
-            old: old,
             value: value
         });
         return this;
     };
 
     GStorage.prototype.del = function(key) {
-        var old = this.store.get(key, null);
 
-        this.store.del(key);
-
-        this.emit('change', {
-            key: key,
-            old: old,
-            value: null
+        this.store.del(key).once('success', function() {
+            this.emit('change', {
+                key: key,
+                action: 'delete',
+                value: value
+            });
         });
-
         return this;
     };
 
