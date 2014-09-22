@@ -133,7 +133,7 @@
 
         var storeID = this.storeID,
             tableID = this.storeID,
-            version = 1;
+            version = this.storeVersion || 1;
 
         console.log('OPEN!');
         var request = indexedDB.open(storeID, version);
@@ -214,15 +214,13 @@
     };
 
     IndexedStore.prototype.del = function(key) {
-        var old = this.store.get(key, null);
-
-        this.store.del(key);
-
-        this.emit('change', {
-            key: key,
-            old: old,
-            value: null
-        });
+        var transaction = this.store.transaction([this.storeID], "readwrite");
+        var store = transaction.objectStore(this.storeID);
+        var request = store.delete(key);
+        request.onsuccess = this.onSuccess.bind(this);
+        request.oncomplete = function(e) {
+            this.logger.info('ON COMPLETE =>', e);
+        }.bind(this);
 
         return this;
     };
