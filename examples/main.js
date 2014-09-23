@@ -42,8 +42,10 @@ define('main', function(require) {
     window.gstorage = gstorage;
 
     gstorage.on('connected', function() {
-        console.log('peperone')
-        this.get('user3').on('success', function(e) {
+        console.log('peperone');
+
+
+        this.get('user3').then(function(e) {
             if (e) {
                 console.log('==> Transaction complete', e);
             } else {
@@ -54,7 +56,14 @@ define('main', function(require) {
                     name: 'askone'
                 });
             }
-
-        });
+        }.bind(this)).then(function(){
+            console.log('NEXT')
+            this.set('peperone', {
+                name:'peperone',
+                age:33
+            }).then(function(e){
+                console.warn('SET', e)
+            })
+        }.bind(this));
     });
 });
