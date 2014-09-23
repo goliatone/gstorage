@@ -86,7 +86,7 @@
             return new WebSQLStore();
         },
         makeStoreId: function() {
-            return this.storeKey + window.location.hostname;
+            return this.driverKey + window.location.hostname;
         }
 
         //store config
@@ -135,10 +135,10 @@
         _extend(this, config);
 
         //TODO: Use promises!!!!!!
-        this.store = this.buildDefaultStore();
-        this.store.onError = this.onError.bind(this);
-        this.store.onSuccess = this.onSuccess.bind(this);
-        this.store.onConnected = this.onConnected.bind(this);
+        this.driver = this.buildDefaultStore();
+        this.driver.onError = this.onError.bind(this);
+        this.driver.onSuccess = this.onSuccess.bind(this);
+        this.driver.onConnected = this.onConnected.bind(this);
 
         return this;
     };
@@ -162,14 +162,13 @@
     ///
     ////////////////////////////////////////////
     GStorage.prototype.get = function(key, def) {
-        this.store.get(key, def);
-        return this;
+        return this.driver.get(key, def);
     };
 
     GStorage.prototype.set = function(key, value) {
-        var old = this.store.get(key, null);
+        var old = this.driver.get(key, null);
 
-        this.store.set(key, value);
+        this.driver.set(key, value);
 
         //TODO: We should formalize bindable model
         //change event payload
@@ -182,7 +181,7 @@
 
     GStorage.prototype.del = function(key) {
 
-        this.store.del(key).once('success', function() {
+        this.driver.del(key).once('success', function() {
             this.emit('change', {
                 key: key,
                 action: 'delete',
@@ -194,7 +193,7 @@
 
     //TODO: This might now make sense
     GStorage.prototype.has = function(key) {
-        return this.store.has(key);
+        return this.driver.has(key);
     };
 
     GStorage.prototype.key = function(key) {
@@ -207,21 +206,21 @@
     ///
     ////////////////////////////////////////////
     GStorage.prototype.maxSize = function() {
-        return this.store.maxSize();
+        return this.driver.maxSize();
     };
 
     GStorage.prototype.size = function() {
-        return this.store.size();
+        return this.driver.size();
     };
 
     GStorage.prototype.clear = function() {
-        return this.store.clear();
+        return this.driver.clear();
         return this;
     };
 
     GStorage.prototype.purge = function() {
         var args = Array.prototype.slice.call(arguments);
-        this.store.purge(args);
+        this.driver.purge(args);
         return this;
     };
 
