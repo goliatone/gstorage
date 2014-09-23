@@ -118,9 +118,9 @@
         console.log('IndexedStore: Init!');
         _extend(this, config);
 
-        this.store = this.createDriver();
+        this.createDriver();
 
-        this.store.onerror = this.onError.bind(this);
+        // this.store.onerror = this.onError.bind(this);
 
         return this;
     };
@@ -133,36 +133,34 @@
 
         var storeID = this.storeID,
             tableID = this.storeID,
-            version = this.storeVersion || 1;
+            version = this.storeVersion || 1,
+            options = {keyPath:'key'};
 
-        console.log('OPEN!');
-        var request = indexedDB.open(storeID, version);
+        var request,
+            promise = new Promise(function(resolve, reject){
 
-        request.onupgradeneeded = function(e) {
-            var db = request.result;
-            console.log('ON UPGRADE NEEDED');
-            if (!db.objectStoreNames.contains(tableID)) {
-                var store = db.createObjectStore(tableID, {
-                    keyPath: "key"
-                });
-                console.log(store)
-            }
-            console.log('STORE', db)
+            request = indexedDB.open(storeID, version);
 
-        };
+            request.onupgradeneeded = function(e) {
+                var db = request.result;
+                if (db.objectStoreNames.contains(tableID)) return;
+                var store = db.createObjectStore(tableID, options);
+            };
 
-        request.onsuccess = function(e) {
-            console.log("Success!", e.target.result);
-            this.store = e.target.result;
-            this.onConnected();
-        }.bind(this);
+            request.onsuccess = function(e) {
+                console.log("Success!", e.target.result);
+                this.store = e.target.result;
+                this.onConnected();
+                resolve(this.store);
+            }.bind(this);
 
-        request.onerror = function(e) {
-            console.log("Error");
-            console.dir(e);
-        };
+            request.onerror = function(e) {
+                this.onError(e);
+                reject(e)
+            }.bind(this);
+        }.bind(this));
 
-        return indexedDB;
+        return promise;
     };
 
     IndexedStore.prototype.onError = function(e) {
@@ -186,14 +184,24 @@
         var transaction = this.store.transaction([this.storeID], "readwrite");
         var store = transaction.objectStore(this.storeID);
         var request = store.get(key);
-        request.onsuccess = function(e) {
-            console.log('request ON SUCCESS', e.target.result);
-            this.onSuccess(e.target.result);
-        }.bind(this);
-        request.oncomplete = function(e) {
-            this.logger.info('ON COMPLETE =>', e);
-        }.bind(this);
-        return this;
+        return new Promise(function(resolve, reject){
+            request.onsuccess = function(e) {
+                console.log('A) request ON SUCCESS', key, e.target.result);
+                this.onSuccess(e.target.result);
+                resolve(e.target.result);
+            }.bind(this);
+            request.oncomplete = function(){
+                console.log('PEPERONE');
+            }
+            request.onerror = function(e) {
+                this.logger.info('ON COMPLETE =>', e);
+                reject(e);
+            }.bind(this);
+            request.onabort = function(e) {
+                this.logger.info('ON COMPLETE =>', e);
+                reject(e);
+            }.bind(this);
+        }.bind(this));
     };
 
     IndexedStore.prototype.set = function(key, value) {
@@ -205,12 +213,17 @@
             value: value,
             timestamp: this.timestamp()
         });
-        request.onsuccess = this.onSuccess.bind(this);
-        request.oncomplete = function(e) {
-            this.logger.info('ON COMPLETE =>', e);
-        }.bind(this);
-
-        return this;
+        return new Promise(function(resolve, reject){
+            request.onsuccess = function(e) {
+                console.log('B) request ON SUCCESS', key, e.target.result);
+                this.onSuccess(e.target.result);
+                resolve(e.target.result);
+            }.bind(this);
+            request.onerror = function(e) {
+                this.logger.info('ON COMPLETE =>', e);
+                reject(e);
+            }.bind(this);
+        }.bind(this));
     };
 
     IndexedStore.prototype.del = function(key) {
