@@ -80,11 +80,8 @@
         hashLength: 32,
         storeKey: '_GST_',
         autoinitialize: true,
-        buildDefaultStore: function() {
-            return new LocalStore();
-        },
-        makeStoreId: function() {
-            return this.storeKey + window.location.hostname;
+        getDriver: function() {
+            return window.localStorage;
         }
     };
 
@@ -133,7 +130,7 @@
 
     //TODO: Move this method to options.
     LocalStore.prototype.createDriver = function() {
-        return window.localStorage;
+        return this.getDriver();
     };
 
     //TODO: We want to have this to be at the Plugin
@@ -164,32 +161,40 @@
     ///
     ////////////////////////////////////////////
     LocalStore.prototype.get = function(key, def) {
-        return this.has(key) ? this.getSerializedValue(key) : def;
-    };
+        var store = this.store;
+        return new Promise(function(resolve, reject){
+            var value;
 
-    LocalStore.prototype.getSerializedValue = function(key) {
-        var value = this.store.getItem(key);
-
-        if (typeof value !== 'string') return value;
-
-        try {
-            value = JSON.parse(value);
-        } catch (E) {
-            this.logger.warn('Error parsing value for key', key);
-            return undefined;
-        }
-        return value;
+            try {
+                value = store.getItem(key);
+                value = JSON.parse(value);
+            } catch (e) {
+                reject(e)
+            }
+            resolve(value);
+        });
     };
 
     LocalStore.prototype.set = function(key, value) {
-        if (value !== 'string') value = JSON.stringify(value);
-        this.store.setItem(key, value);
-        return this;
+        var store = this.store;
+        return new Promise(function(resolve, reject){
+            try{
+                if (value !== 'string') value = JSON.stringify(value);
+                store.setItem(key, value);
+                //TODO: What do we send here!
+                resolve(value);
+            } catch(e){
+                reject(e);
+            }
+        });
     };
 
     LocalStore.prototype.del = function(key) {
-        this.store.removeItem(key);
-        return this;
+        var store = this.store;
+        return new Promise(function(resolve, reject){
+            this.store.removeItem(key);
+            resolve(key);
+        });
     };
 
     LocalStore.prototype.has = function(key) {
