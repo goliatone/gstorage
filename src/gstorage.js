@@ -162,34 +162,26 @@
     ///
     ////////////////////////////////////////////
     GStorage.prototype.get = function(key, def) {
-        this.store.get(key, def);
-        return this;
+        return this.store.get(key, def);
     };
 
     GStorage.prototype.set = function(key, value) {
-        var old = this.store.get(key, null);
-
-        this.store.set(key, value);
-
-        //TODO: We should formalize bindable model
-        //change event payload
-        this.emit('change', {
-            key: key,
-            value: value
-        });
-        return this;
+        return this.store.set(key, value).then(function(){
+            this.emit('change', {
+                key: key,
+                value: value
+            });
+        }.bind(this));
     };
 
     GStorage.prototype.del = function(key) {
-
-        this.store.del(key).once('success', function() {
+        return this.store.del(key).then('success', function(result) {
             this.emit('change', {
                 key: key,
                 action: 'delete',
-                value: value
+                value: result
             });
-        });
-        return this;
+        }.bind(this));
     };
 
     //TODO: This might now make sense
@@ -206,25 +198,27 @@
     /// STORE DELEGATE METHODS
     ///
     ////////////////////////////////////////////
+    /////TODO: This might now make sense
     GStorage.prototype.maxSize = function() {
         return this.store.maxSize();
     };
 
+    //TODO: This might now make sense
     GStorage.prototype.size = function() {
         return this.store.size();
     };
-
+    //TODO: This might now make sense
     GStorage.prototype.clear = function() {
         return this.store.clear();
         return this;
     };
-
+    //TODO: This might now make sense
     GStorage.prototype.purge = function() {
         var args = Array.prototype.slice.call(arguments);
         this.store.purge(args);
         return this;
     };
-
+    //TODO: This might now make sense
     GStorage.prototype.setTTL = function(key, time) {
         throw new Error('TODO: This needs to be implemented!!!');
     };
