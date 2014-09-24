@@ -35,7 +35,7 @@
             return mod;
         };
     }
-}(this, 'indexedstore', ['extend'], function(extend) {
+}(this, 'indexedstore', ['extend', 'promiseddb'], function(extend, PromisedDB) {
 
     /**
      * Extend method.
@@ -69,8 +69,6 @@
 
         return con;
     };
-
-
 
     ///////////////////////////////////////////////////
     // CONSTRUCTOR
@@ -120,49 +118,27 @@
 
         this.store = this.createDriver();
 
-        this.store.onerror = this.onError.bind(this);
+        this.store.onError = this.onError.bind(this);
 
         return this;
     };
 
     //TODO: Move this method to options.
     IndexedStore.prototype.createDriver = function() {
-        window.indexedDB = window.indexedDB || window.mozIndexedDB || window.msIndexedDB || window.webkitIndexedDB;
-        window.IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction || window.msIDBTransaction;
-        window.IDBKeyRange = window.IDBKeyRange || window.webkitIDBKeyRange || window.msIDBKeyRange;
-
-        var storeID = this.storeID,
-            tableID = this.storeID,
-            version = this.storeVersion || 1;
-
-        console.log('OPEN!');
-        var request = indexedDB.open(storeID, version);
-
-        request.onupgradeneeded = function(e) {
-            var db = request.result;
-            console.log('ON UPGRADE NEEDED');
-            if (!db.objectStoreNames.contains(tableID)) {
-                var store = db.createObjectStore(tableID, {
-                    keyPath: "key"
-                });
-                console.log(store)
+        var notify = this.onCreated.bind(this);
+        var db = new PromisedDB({
+            defineSchema:function(){
+                var tableID = this.storeID;
+                this.createObjectStore(tableID, {keyPath: 'key'});
             }
-            console.log('STORE', db)
+        });
 
-        };
+        return db;
+    };
 
-        request.onsuccess = function(e) {
-            console.log("Success!", e.target.result);
-            this.store = e.target.result;
-            this.onConnected();
-        }.bind(this);
-
-        request.onerror = function(e) {
-            console.log("Error");
-            console.dir(e);
-        };
-
-        return indexedDB;
+    //TODO: Move this to IndexedStore.supported!
+    IndexedStore.prototype.supported = function() {
+       return PromisedDB.supported();
     };
 
     IndexedStore.prototype.onError = function(e) {
@@ -170,6 +146,9 @@
         this.emit('error', e);
     };
 
+    IndexedStore.prototype.onCreated = function(){
+        this.logger.info('IndexedStore created');
+    }
     IndexedStore.prototype.onConnected = function() {
         this.logger.info('on ready')
     };
@@ -183,49 +162,38 @@
     ///
     ////////////////////////////////////////////
     IndexedStore.prototype.get = function(key, def) {
-        var transaction = this.store.transaction([this.storeID], "readwrite");
-        var store = transaction.objectStore(this.storeID);
-        var request = store.get(key);
-        request.onsuccess = function(e) {
-            console.log('request ON SUCCESS', e.target.result);
-            this.onSuccess(e.target.result);
-        }.bind(this);
-        request.oncomplete = function(e) {
-            this.logger.info('ON COMPLETE =>', e);
-        }.bind(this);
-        return this;
+        var storeID = this.storeID;
+        return this.store.with(storeID, function(execute){
+            execute(this.objectStore(storeID)
+                    .get(key));
+        });
     };
 
     IndexedStore.prototype.set = function(key, value) {
-        // var old = this.store.get(key, null);
-        var transaction = this.store.transaction([this.storeID], "readwrite");
-        var store = transaction.objectStore(this.storeID);
-        var request = store.put({
+        var storeID = this.storeID;
+        var object = {
             key: key,
             value: value,
             timestamp: this.timestamp()
+        };
+        return this.store.with(storeID, function(execute){
+            execute(this.objectStore(storeID)
+                    .put(object));
         });
-        request.onsuccess = this.onSuccess.bind(this);
-        request.oncomplete = function(e) {
-            this.logger.info('ON COMPLETE =>', e);
-        }.bind(this);
 
-        return this;
+
     };
 
     IndexedStore.prototype.del = function(key) {
-        var transaction = this.store.transaction([this.storeID], "readwrite");
-        var store = transaction.objectStore(this.storeID);
-        var request = store.delete(key);
-        request.onsuccess = this.onSuccess.bind(this);
-        request.oncomplete = function(e) {
-            this.logger.info('ON COMPLETE =>', e);
-        }.bind(this);
-
-        return this;
+        var storeID = this.storeID;
+        return this.store.with(storeID, function(execute){
+            execute(this.objectStore(storeID)
+                    .get(key));
+        });
     };
 
     IndexedStore.prototype.has = function(key) {
+        //TODO: This does not make sense in async mode?
         return this.store.has(key);
     };
 
