@@ -114,7 +114,9 @@
      */
     PromisedDB.DEFAULTS = OPTIONS;
 
-
+    PromisedDB.supported = function() {
+        return !!(indexedDB || mozIndexedDB || webkitIndexedDB || msIndexedDB);
+    };
     ///////////////////////////////////////////////////
     // PRIVATE METHODS
     ///////////////////////////////////////////////////
@@ -163,13 +165,14 @@
         // This will run if our database is new.
         req.onupgradeneeded = function(e) {
             var connection = e.target.result;
+            //TODO: Should we ensure we notify that
+            //we had to create the DB?!
             this.defineSchema.apply(connection);
         };
 
         req.onerror = req.onerror.bind(this);
         req.onsuccess = req.onsuccess.bind(this);
         req.onupgradeneeded = req.onupgradeneeded.bind(this);
-
     };
 
     PromisedDB.prototype.flushQueue = function() {
