@@ -84,7 +84,11 @@
         version: 1.0,
         storeId:'_GST_',
         database: '_gstore_default_',
-        defineSchema:function() {}
+        resultNamespace:'result',
+        defineSchema:function() {},
+        getDriver:function(){
+            return indexedDB || mozIndexedDB || webkitIndexedDB || msIndexedDB;
+        }
     };
 
     /**
@@ -122,15 +126,11 @@
         console.log('PromisedDB: Init!');
         _extend(this, config);
 
-        if (!config || !config.version || !config.database) {
-            throw new Error('Invalid arg! Specify database and version');
-        }
-
         this.tries = 0;
         this.queue = [];
 
         // Use a vendor specific IndexedDB object.
-        this.db = indexedDB || mozIndexedDB || webkitIndexedDB || msIndexedDB;
+        this.db = this.getDriver();
 
         if (config.autoconnect) this.connect();
 
@@ -185,6 +185,7 @@
      */
     PromisedDB.prototype.resolveTransaction = function(storeId, commit, resolve, reject) {
         var commands = [],
+            defaultNamespace = this.resultNamespace,
             transaction = this.connection.transaction(storeId, 'readwrite');
 
         /*
@@ -193,18 +194,18 @@
          * `query` is actually the IDBRequest returned by
          *  `indexedbd.transaction`
          */
-        var execute = function(storeId, request) {
-            commands.push(new Promise(function(rs, rj) {
-                console.warn('command execute', storeId, request);
+        var execute = function(request, namespace) {
+            namespace || (namespace = defaultNamespace);
+            var promised = new Promise(function(rs, rj) {
                 request.onerror = rj;
                 request.onsuccess = function(data) {
-                    console.warn('success')
                     rs({
-                        for: storeId,
+                        for: namespace,
                         result: data.target.result
                     });
                 };
-            }));
+            });
+            commands.push(promised);
         };
 
         try {
@@ -213,6 +214,7 @@
              */
             commit.call(transaction, execute);
         } catch (e) {
+
             reject(e);
         }
 
@@ -227,6 +229,10 @@
                     return output;
                 }, {});
                 resolve(result);
+            })
+            .catch(function(e){
+                console.error(e);
+                reject(e);
             });
     };
 
@@ -237,7 +243,7 @@
         this.queue.push([].slice.call(arguments, 0));
     };
 
-    PromisedDB.prototype.use = function(storeId, query) {
+    PromisedDB.prototype.with = function(storeId, query) {
         this.storeId = storeId;
         //query here is a transaction callback.
         var executor = function(resolve, reject) {
@@ -253,7 +259,7 @@
     };
 
     PromisedDB.prototype.query = function(query) {
-        return this.use(this.storeId, query);
+        return this.with(this.storeId, query);
     };
 
     PromisedDB.prototype.onConnected = function() {
