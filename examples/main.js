@@ -7,7 +7,7 @@ requirejs.config({
         'extend': 'gextend/extend',
         'gpub': 'gpub/gpub',
         'gstorage': 'gstorage',
-        'promiseddb':'promiseddb',
+        'promiseddb': 'promiseddb',
         'localstore': 'local.store',
         'websqlstore': 'websql.store',
         'indexedstore': 'indexed.store'
@@ -30,34 +30,38 @@ define('main', function(require) {
     GPup.observable(IndexedStore);
 
     var gstorage = new GStorage({
-        buildDefaultStore: function() {
+        storeFactory: function(config) {
             //Use NullStore
             // return new WSQLStore({
             //     storeId: this.storeId,
             //     storeName: this.storeName,
             //     hashLength: this.hashLength
             // });
-            // return new IndexedStore();
-            return new LocalStore();
+            // return new IndexedStore(config);
+            return new LocalStore(config);
         }
     });
 
     window.gstorage = gstorage;
 
-    gstorage.get('user3').then(function(e) {
+    gstorage.get('user4').then(function(e) {
         if (e) {
             console.log('==> Transaction complete', e);
+        } else {
+            console.log('we do not had stuff');
         }
+    }).then(function(e) {
+        console.log('HERE', e);
     });
 
-    gstorage.set('user3', {
+    gstorage.set('user4', {
         active: false,
         age: 23,
         email: 'asko@som.es',
         name: 'askone'
     });
 
-    gstorage.on('change', function(e){
+    gstorage.on('change', function(e) {
         console.debug('chachachachaaaange', e);
     })
 });
