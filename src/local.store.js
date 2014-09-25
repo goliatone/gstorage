@@ -1,3 +1,4 @@
+'use strict';
 /*
  * gstorage
  * https://github.com/goliatone/gstorage
@@ -76,9 +77,7 @@
     // CONSTRUCTOR
     ///////////////////////////////////////////////////
 
-    var options = {
-        hashLength: 32,
-        storeKey: '_GST_',
+    var OPTIONS = {
         autoinitialize: true,
         getDriver: function() {
             return window.localStorage;
@@ -98,7 +97,8 @@
         if (config.autoinitialize) this.init(config);
     };
 
-    LocalStore.name = LocalStore.prototype.name = 'LocalStore';
+    //LocalStore.name =
+    LocalStore.prototype.name = 'LocalStore';
 
     LocalStore.VERSION = '0.0.0';
 
@@ -106,7 +106,7 @@
      * Make default options available so we
      * can override.
      */
-    LocalStore.DEFAULTS = options;
+    LocalStore.DEFAULTS = OPTIONS;
 
     LocalStore.use = function(ext) {
         _extend(LocalStore.prototype, ext);
@@ -120,7 +120,7 @@
         if (this.initialized) return this.logger.warn('Already initialized');
         this.initialized = true;
 
-        console.log('LocalStore: Init!');
+        console.log('LocalStore: Init!', config);
         _extend(this, config);
 
         this.store = this.createDriver();
@@ -153,18 +153,18 @@
     };
 
     LocalStore.prototype.onSuccess = function(xxx, results) {
-
+        this.logger.info('onSuccess', arguments);
     };
 
     ////////////////////////////////////////////
     /// DATA ACCESSSOR MEHTODS
     ///
     ////////////////////////////////////////////
-    LocalStore.prototype.get = function(key, def) {
-        var store = this.store;
+    LocalStore.prototype.get = function(id, def) {
+        var key = this.key(id),
+            store = this.store;
         return new Promise(function(resolve, reject) {
             var value;
-
             try {
                 value = store.getItem(key);
                 value = JSON.parse(value);
@@ -175,8 +175,8 @@
         });
     };
 
-    LocalStore.prototype.set = function(key, value) {
-        key = this.key(key);
+    LocalStore.prototype.set = function(id, value) {
+        var key = this.key(id);
         var store = this.store;
         return new Promise(function(resolve, reject) {
             try {
@@ -190,17 +190,18 @@
         });
     };
 
-    LocalStore.prototype.del = function(key) {
-        var store = this.store;
+    LocalStore.prototype.del = function(id) {
+        var key = this.key(id),
+            store = this.store;
         return new Promise(function(resolve, reject) {
             this.store.removeItem(key);
             resolve(key);
         });
     };
 
-    LocalStore.prototype.key = function(key) {
+    LocalStore.prototype.key = function(id) {
         //TODO: Do we want to transform key?
-        return key;
+        return this.storeID + '.' + id;
     };
 
     ////////////////////////////////////////////
@@ -219,7 +220,7 @@
         }
     };
 
-    LocalStore.prototype.setTTL = function(key, time) {
+    LocalStore.prototype.setTTL = function(id, time) {
         throw new Error('TODO: This needs to be implemented!!!');
     };
 
