@@ -76,7 +76,7 @@
     // CONSTRUCTOR
     ///////////////////////////////////////////////////
 
-    var options = {
+    var OPTIONS = {
         hashLength: 32,
         storeKey: '_GST_',
         storeID: '_gstore_default_',
@@ -88,12 +88,6 @@
         makeStoreId: function() {
             return this.storeKey + window.location.hostname;
         }
-
-        //store config
-        // storeName: '',
-        // storeTable: '',
-        // storeVersion: ''
-
     };
 
     /**
@@ -117,7 +111,7 @@
      * Make default options available so we
      * can override.
      */
-    GStorage.DEFAULTS = options;
+    GStorage.DEFAULTS = OPTIONS;
 
     GStorage.use = function(ext) {
         _extend(GStorage.prototype, ext);
@@ -166,7 +160,7 @@
     };
 
     GStorage.prototype.set = function(key, value) {
-        return this.store.set(key, value).then(function(){
+        return this.store.set(key, value).then(function() {
             this.emit('change', {
                 key: key,
                 value: value
@@ -184,11 +178,6 @@
         }.bind(this));
     };
 
-    //TODO: This might now make sense
-    GStorage.prototype.has = function(key) {
-        return this.store.has(key);
-    };
-
     GStorage.prototype.key = function(key) {
         //TODO: Do we want to transform key?
         return key;
@@ -198,15 +187,7 @@
     /// STORE DELEGATE METHODS
     ///
     ////////////////////////////////////////////
-    /////TODO: This might now make sense
-    GStorage.prototype.maxSize = function() {
-        return this.store.maxSize();
-    };
 
-    //TODO: This might now make sense
-    GStorage.prototype.size = function() {
-        return this.store.size();
-    };
     //TODO: This might now make sense
     GStorage.prototype.clear = function() {
         return this.store.clear();
