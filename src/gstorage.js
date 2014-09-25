@@ -85,6 +85,9 @@
             //Use NullStore
             return new WebSQLStore();
         },
+        storeConfig: {
+            storeID: '_gstore_default_'
+        },
         makeStoreId: function() {
             return this.storeKey + window.location.hostname;
         }
@@ -128,13 +131,23 @@
         console.log('GStorage: Init!');
         _extend(this, config);
 
-        //TODO: Use promises!!!!!!
-        this.store = this.buildDefaultStore();
-        this.store.onError = this.onError.bind(this);
-        this.store.onSuccess = this.onSuccess.bind(this);
-        this.store.onConnected = this.onConnected.bind(this);
+        this.store = this.buildStore();
 
         return this;
+    };
+
+    GStorage.prototype.buildStore = function() {
+        var config = this.storeConfig;
+
+        var store = this.storeFactory(config);
+
+        if (typeof store.setOwner === 'function') store.setOwner(this);
+
+        store.onError = this.onError.bind(this);
+        store.onSuccess = this.onSuccess.bind(this);
+        store.onConnected = this.onConnected.bind(this);
+
+        return store;
     };
 
     GStorage.prototype.onError = function(e) {
