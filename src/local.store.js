@@ -162,7 +162,7 @@
     ////////////////////////////////////////////
     LocalStore.prototype.get = function(key, def) {
         var store = this.store;
-        return new Promise(function(resolve, reject){
+        return new Promise(function(resolve, reject) {
             var value;
 
             try {
@@ -176,14 +176,15 @@
     };
 
     LocalStore.prototype.set = function(key, value) {
+        key = this.key(key);
         var store = this.store;
-        return new Promise(function(resolve, reject){
-            try{
+        return new Promise(function(resolve, reject) {
+            try {
                 if (value !== 'string') value = JSON.stringify(value);
                 store.setItem(key, value);
                 //TODO: What do we send here!
                 resolve(value);
-            } catch(e){
+            } catch (e) {
                 reject(e);
             }
         });
@@ -191,14 +192,10 @@
 
     LocalStore.prototype.del = function(key) {
         var store = this.store;
-        return new Promise(function(resolve, reject){
+        return new Promise(function(resolve, reject) {
             this.store.removeItem(key);
             resolve(key);
         });
-    };
-
-    LocalStore.prototype.has = function(key) {
-        return this.store.getItem(key) !== null;
     };
 
     LocalStore.prototype.key = function(key) {
@@ -210,20 +207,8 @@
     /// STORE DELEGATE METHODS
     ///
     ////////////////////////////////////////////
-    LocalStore.prototype.maxSize = function() {
-        // 5 MB per origin in Google Chrome, Mozilla
-        // Firefox, and Opera; 10 MB per storage
-        // area in Internet Explorer. Should we bother?
-        return -1;
-    };
-
-    LocalStore.prototype.size = function() {
-        return this.store.length;
-    };
-
     LocalStore.prototype.clear = function() {
         return this.store.clear();
-        return this;
     };
 
     LocalStore.prototype.purge = function() {
@@ -242,9 +227,6 @@
     /// UTILITY METHODS
     ///
     ////////////////////////////////////////////
-
-
-
 
     /**
      * Logger method, meant to be implemented by
