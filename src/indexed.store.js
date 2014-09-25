@@ -74,7 +74,7 @@
     // CONSTRUCTOR
     ///////////////////////////////////////////////////
 
-    var options = {
+    var OPTIONS = {
         autoinitialize: true
     };
 
@@ -99,7 +99,7 @@
      * Make default options available so we
      * can override.
      */
-    IndexedStore.DEFAULTS = options;
+    IndexedStore.DEFAULTS = OPTIONS;
 
     IndexedStore.use = function(ext) {
         _extend(IndexedStore.prototype, ext);
@@ -113,7 +113,7 @@
         if (this.initialized) return this.logger.warn('Already initialized');
         this.initialized = true;
 
-        console.log('IndexedStore: Init!');
+        console.log('IndexedStore: Init!', config);
         _extend(this, config);
 
         this.store = this.createDriver();
