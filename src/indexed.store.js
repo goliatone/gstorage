@@ -127,9 +127,11 @@
     IndexedStore.prototype.createDriver = function() {
         var notify = this.onCreated.bind(this);
         var db = new PromisedDB({
-            defineSchema:function(){
+            defineSchema: function() {
                 var tableID = this.storeID;
-                this.createObjectStore(tableID, {keyPath: 'key'});
+                this.createObjectStore(tableID, {
+                    keyPath: 'key'
+                });
             }
         });
 
@@ -138,7 +140,7 @@
 
     //TODO: Move this to IndexedStore.supported!
     IndexedStore.prototype.supported = function() {
-       return PromisedDB.supported();
+        return PromisedDB.supported();
     };
 
     IndexedStore.prototype.onError = function(e) {
@@ -146,7 +148,7 @@
         this.emit('error', e);
     };
 
-    IndexedStore.prototype.onCreated = function(){
+    IndexedStore.prototype.onCreated = function() {
         this.logger.info('IndexedStore created');
     }
     IndexedStore.prototype.onConnected = function() {
@@ -162,39 +164,37 @@
     ///
     ////////////////////////////////////////////
     IndexedStore.prototype.get = function(key, def) {
+        key = this.key(key);
         var storeID = this.storeID;
-        return this.store.with(storeID, function(execute){
+        return this.store.with(storeID, function(execute) {
             execute(this.objectStore(storeID)
-                    .get(key));
+                .get(key));
         });
     };
 
     IndexedStore.prototype.set = function(key, value) {
+        key = this.key(key);
         var storeID = this.storeID;
+
         var object = {
             key: key,
             value: value,
             timestamp: this.timestamp()
         };
-        return this.store.with(storeID, function(execute){
+
+        return this.store.with(storeID, function(execute) {
             execute(this.objectStore(storeID)
-                    .put(object));
+                .put(object));
         });
-
-
     };
 
     IndexedStore.prototype.del = function(key) {
+        key = this.key(key);
         var storeID = this.storeID;
-        return this.store.with(storeID, function(execute){
+        return this.store.with(storeID, function(execute) {
             execute(this.objectStore(storeID)
-                    .get(key));
+                .get(key));
         });
-    };
-
-    IndexedStore.prototype.has = function(key) {
-        //TODO: This does not make sense in async mode?
-        return this.store.has(key);
     };
 
     IndexedStore.prototype.key = function(key) {
@@ -206,14 +206,6 @@
     /// STORE DELEGATE METHODS
     ///
     ////////////////////////////////////////////
-    IndexedStore.prototype.maxSize = function() {
-        return this.store.maxSize();
-    };
-
-    IndexedStore.prototype.size = function() {
-        return this.store.size();
-    };
-
     IndexedStore.prototype.clear = function() {
         return this.store.clear();
         return this;
@@ -223,10 +215,6 @@
         var args = Array.prototype.slice.call(arguments);
         this.store.purge(args);
         return this;
-    };
-
-    IndexedStore.prototype.setTTL = function(key, time) {
-        throw new Error('TODO: This needs to be implemented!!!');
     };
 
     ////////////////////////////////////////////
