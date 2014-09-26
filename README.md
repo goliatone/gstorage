@@ -56,3 +56,9 @@ _(Coming soon)_
 
 ## Release History
 _(Nothing yet)_
+
+
+## TODO:
+- Make store factory to handle creation based on features.
+- Define API for drivers.
+- Define Store API.
