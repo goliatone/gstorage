@@ -1,6 +1,6 @@
 {
   "name": "gstorage",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Persistence layer",
   "homepage": "https://github.com/goliatone/gstorage",
 	"repository": {
