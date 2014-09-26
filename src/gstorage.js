@@ -78,18 +78,15 @@
 
     var OPTIONS = {
         hashLength: 32,
-        storeKey: '_GST_',
+        storeKey: '_GST',
         storeID: '_gstore_default_',
         autoinitialize: true,
         buildDefaultStore: function() {
             //Use NullStore
             return new WebSQLStore();
         },
-        storeConfig: {
-            storeID: '_gstore_default_'
-        },
         makeStoreId: function() {
-            return this.storeKey + window.location.hostname;
+            return this.storeKey + '.' + window.location.hostname;
         }
     };
 
@@ -102,6 +99,8 @@
         config = config || {};
 
         config = _extend({}, this.constructor.DEFAULTS, config);
+
+        if (config.makeStoreId) config.storeID = config.makeStoreId();
 
         if (config.autoinitialize) this.init(config);
     };
@@ -131,14 +130,12 @@
         console.log('GStorage: Init!');
         _extend(this, config);
 
-        this.store = this.buildStore();
+        this.store = this.buildStore(config);
 
         return this;
     };
 
-    GStorage.prototype.buildStore = function() {
-        var config = this.storeConfig;
-
+    GStorage.prototype.buildStore = function(config) {
         var store = this.storeFactory(config);
 
         if (typeof store.setOwner === 'function') store.setOwner(this);
@@ -176,6 +173,7 @@
         return this.store.set(key, value).then(function() {
             this.emit('change', {
                 key: key,
+                action: 'set',
                 value: value
             });
         }.bind(this));
@@ -204,7 +202,6 @@
     //TODO: This might now make sense
     GStorage.prototype.clear = function() {
         return this.store.clear();
-        return this;
     };
     //TODO: This might now make sense
     GStorage.prototype.purge = function() {
