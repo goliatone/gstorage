@@ -70,23 +70,21 @@
         return con;
     };
 
-
-
     ///////////////////////////////////////////////////
     // CONSTRUCTOR
     ///////////////////////////////////////////////////
 
     var OPTIONS = {
-        autoconnect:true,
+        autoconnect: true,
         autoinitialize: true,
         delay: 200,
         maxTries: 5,
         version: 1.0,
-        storeId:'_GST_',
+        storeId: '_GST_',
         database: '_gstore_default_',
-        resultNamespace:'result',
-        defineSchema:function() {},
-        getDriver:function(){
+        resultNamespace: 'result',
+        defineSchema: function() {},
+        getDriver: function() {
             return indexedDB || mozIndexedDB || webkitIndexedDB || msIndexedDB;
         }
     };
@@ -170,8 +168,15 @@
             this.defineSchema.apply(connection);
         };
 
+        //Usually it means that there is an
+        //ongoing connection to the same resource.
+        req.onblocked = function(e) {
+            this.onError(e);
+        };
+
         req.onerror = req.onerror.bind(this);
         req.onsuccess = req.onsuccess.bind(this);
+        req.onblocked = req.onblocked.bind(this);
         req.onupgradeneeded = req.onupgradeneeded.bind(this);
     };
 
@@ -187,6 +192,7 @@
      * Resolve transaction and provide results to caller
      */
     PromisedDB.prototype.resolveTransaction = function(storeId, commit, resolve, reject) {
+        console.warn('STOREID', arguments);
         var commands = [],
             defaultNamespace = this.resultNamespace,
             transaction = this.connection.transaction(storeId, 'readwrite');
@@ -233,7 +239,7 @@
                 }, {});
                 resolve(result);
             })
-            .catch(function(e){
+            .catch(function(e) {
                 console.error(e);
                 reject(e);
             });
@@ -247,6 +253,7 @@
     };
 
     PromisedDB.prototype.with = function(storeId, query) {
+        console.info('PromisedDB', arguments);
         this.storeId = storeId;
         //query here is a transaction callback.
         var executor = function(resolve, reject) {

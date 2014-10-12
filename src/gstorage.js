@@ -81,9 +81,9 @@
         storeKey: '_GST',
         storeID: '_gstore_default_',
         autoinitialize: true,
-        buildDefaultStore: function() {
+        storeFactory: function(config) {
             //Use NullStore
-            return new WebSQLStore();
+            return new IndexedStore(config);
         },
         makeStoreId: function() {
             return this.storeKey + '.' + window.location.hostname;

@@ -62,3 +62,9 @@ _(Nothing yet)_
 - Make store factory to handle creation based on features.
 - Define API for drivers.
 - Define Store API.
+
+Use case, sync data stores. 
+Load data from local persistence- IndexedDB, WebSQL, LocalStore.
+Load data from remote persistence- WebSocket, RESTul.
+Save data to local persistence.
+Save data to remote persistence.

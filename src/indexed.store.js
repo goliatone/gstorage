@@ -125,10 +125,13 @@
 
     //TODO: Move this method to options.
     IndexedStore.prototype.createDriver = function() {
+        var storeID = this.storeID;
         var notify = this.onCreated.bind(this);
         var db = new PromisedDB({
-            defineSchema: function() {
+            storeID: storeID,
+            defineSchema: function(owner) {
                 var tableID = this.storeID;
+                console.info('IndexedStore: defineSchema', tableID);
                 this.createObjectStore(tableID, {
                     keyPath: 'key'
                 });
@@ -166,6 +169,7 @@
     IndexedStore.prototype.get = function(key, def) {
         key = this.key(key);
         var storeID = this.storeID;
+        console.log('STORE ID', this.storeID);
         return this.store.with(storeID, function(execute) {
             execute(this.objectStore(storeID)
                 .get(key));
