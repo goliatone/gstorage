@@ -44,7 +44,7 @@ define('main', function(require) {
 
     window.gstorage = gstorage;
 
-    gstorage.get('user4').then(function(e) {
+    gstorage.get('payloads').then(function(e) {
         if (e) {
             console.log('==> Transaction complete', e);
         } else {
@@ -54,12 +54,35 @@ define('main', function(require) {
         console.log('HERE', e);
     });
 
-    gstorage.set('user4', {
-        active: false,
-        age: 23,
-        email: 'asko@som.es',
-        name: 'askone'
-    });
+    // gstorage.set('payloads', [{
+    //     name: 'introduction',
+    //     group: 'habbal',
+    //     data: {
+    //         "type": "command",
+    //         "name": "send_config",
+    //         "scene": "introduction",
+    //         "config": "habbal"
+    //     }
+    // }, {
+    //     name: 'vote',
+    //     group: 'habbal',
+    //     data: {
+    //         "type": "command",
+    //         "name": "send_config",
+    //         "scene": "vote",
+    //         "config": "habbal"
+    //     }
+    // }, {
+    //     name: 'vote-start',
+    //     group: 'orientation',
+    //     data: {
+    //         scene: 'vote-start',
+    //         type: 'message',
+    //         payload: {
+    //             age: 23
+    //         }
+    //     }
+    // }]);
 
     gstorage.on('change', function(e) {
         console.debug('chachachachaaaange', e);
